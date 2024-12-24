@@ -2,7 +2,7 @@ import { Bot } from "grammy";
 import { ChatSession, Message, ModelConfig } from "./types";
 import { DatabaseService } from "./services/DatabaseService";
 
-const TELEGRAM_GROUP_ID = -4663643228;
+const TELEGRAM_GROUP_ID = -1002341709610;
 const DELAY_BETWEEN_RESPONSES = 600000; // 10 minutes in milliseconds
 
 export class ConversationManager {
@@ -58,17 +58,17 @@ export class ConversationManager {
     try {
       // Prepare messages for the current model's perspective
       const contextMessages = messages.map((msg) => {
-        if (msg.content.startsWith(`[${otherModelName}]:`)) {
+        if (msg.content.startsWith(`[${otherModelName}]:\n\n`)) {
           // Other model's messages become assistant messages
           return {
             role: "user",
-            content: msg.content.replace(`[${otherModelName}]:`, ""),
+            content: msg.content.replace(`[${otherModelName}]:\n\n`, ""),
           };
         } else {
           // Current model's previous messages become user messages
           return {
             role: "assistant",
-            content: msg.content.replace(`[${model.name}]:`, ""),
+            content: msg.content.replace(`[${model.name}]:\n\n`, ""),
           };
         }
       });
@@ -117,7 +117,7 @@ export class ConversationManager {
       timestamp,
       messages: [
         {
-          content: `[${this.model2.name}]: ${initialMessage}`,
+          content: `[${this.model2.name}]:\n\n${initialMessage}`,
         },
       ],
     };
