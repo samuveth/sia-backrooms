@@ -31,7 +31,7 @@ async function main() {
     );
     console.log("Session started:", session.id);
 
-    // Continue the conversation for 3 turns
+    // Continue the conversation for 10000 turns
     const updatedSession = await manager.continueConversation(
       session.id,
       10000
@@ -48,11 +48,18 @@ async function main() {
   }
 }
 
-// Check if API key is provided
-if (!process.env.REDPILL_API_KEY || !process.env.TELEGRAM_BOT_TOKEN) {
-  console.error(
-    "Please make sure REDPILL_API_KEY and TELEGRAM_BOT_TOKEN are set in your .env file"
-  );
+if (!process.env.REDPILL_API_KEY) {
+  console.error("Please make sure REDPILL_API_KEY is set");
+  process.exit(1);
+}
+
+if (!process.env.TELEGRAM_BOT_TOKEN) {
+  console.error("Please make sure TELEGRAM_BOT_TOKEN is set");
+  process.exit(1);
+}
+
+if (!process.env.MONGODB_URI) {
+  console.error("Please make sure MONGODB_URI is set");
   process.exit(1);
 }
 

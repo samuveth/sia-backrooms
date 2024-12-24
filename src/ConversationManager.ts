@@ -1,26 +1,21 @@
-import { writeFile, readFile } from "fs/promises";
-import { join } from "path";
-import { ChatSession, Message, ModelConfig } from "./types";
 import { Bot } from "grammy";
+import { ChatSession, Message, ModelConfig } from "./types";
+import { DatabaseService } from "./services/DatabaseService";
 
-const TELEGRAM_GROUP_ID = -4663643228; // Note: removed quotes as Grammy expects a number
+const TELEGRAM_GROUP_ID = -4663643228;
 const DELAY_BETWEEN_RESPONSES = 600000; // 10 minutes in milliseconds
 
 export class ConversationManager {
   private model1: ModelConfig;
   private model2: ModelConfig;
-  private sessionPath: string;
   private bot: Bot;
+  private db: DatabaseService;
 
-  constructor(
-    model1: ModelConfig,
-    model2: ModelConfig,
-    sessionPath: string = "./sessions"
-  ) {
+  constructor(model1: ModelConfig, model2: ModelConfig) {
     this.model1 = model1;
     this.model2 = model2;
-    this.sessionPath = sessionPath;
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!);
+    this.db = new DatabaseService();
   }
 
   private async delay(ms: number): Promise<void> {
@@ -48,19 +43,11 @@ export class ConversationManager {
   }
 
   private async saveSession(session: ChatSession): Promise<void> {
-    const filePath = join(this.sessionPath, `${session.id}.txt`);
-    const content = JSON.stringify(session, null, 2);
-    await writeFile(filePath, content, "utf-8");
+    await this.db.saveSession(session);
   }
 
   private async loadSession(sessionId: string): Promise<ChatSession | null> {
-    try {
-      const filePath = join(this.sessionPath, `${sessionId}.txt`);
-      const content = await readFile(filePath, "utf-8");
-      return JSON.parse(content);
-    } catch (error) {
-      return null;
-    }
+    return await this.db.loadSession(sessionId);
   }
 
   private async fetchModelResponse(

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.7",
-    "grammy": "^1.33.0"
+    "grammy": "^1.33.0",
+    "mongoose": "^8.9.2"
   }
 }
