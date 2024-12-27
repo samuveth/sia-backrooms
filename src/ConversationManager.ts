@@ -158,15 +158,9 @@ export class ConversationManager {
       messages: [...previousSession.messages],
     };
 
-    // Get last 5 messages
-    const lastFiveMessages = previousSession.messages
-      .slice(-5)
-      .map((msg) => msg.content)
-      .join("\n\n");
-
     await this.saveSession(session);
     await this.sendToTelegram(
-      `Session ID: ${session.id}\nContinued from: ${previousSessionId}\n\nLast messages:\n${lastFiveMessages}`,
+      `Session ID: ${session.id}\nContinued from: ${previousSessionId}\n\n`,
       true // Pin this message
     );
     return session;
