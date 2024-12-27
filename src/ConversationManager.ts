@@ -5,7 +5,7 @@ import { DatabaseService } from "./services/DatabaseService";
 const TELEGRAM_GROUP_ID = -1002341709610;
 const DELAY_BETWEEN_RESPONSES = 300000;
 
-const MODEL_1 = "anthropic/claude-3-opus";
+const MODEL_1 = "meta-llama/llama-3.3-70b-instruct";
 const MODEL_2 = "meta-llama/llama-3.3-70b-instruct";
 export class ConversationManager {
   private model1: ModelConfig;
@@ -155,7 +155,7 @@ export class ConversationManager {
     const session: ChatSession = {
       id: timestamp.replace(/[:.]/g, "-"),
       timestamp,
-      messages: [...previousSession.messages],
+      messages: [...previousSession.messages.slice(-40)],
     };
 
     await this.saveSession(session);
