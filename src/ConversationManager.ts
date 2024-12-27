@@ -3,7 +3,7 @@ import { ChatSession, Message, ModelConfig } from "./types";
 import { DatabaseService } from "./services/DatabaseService";
 
 const TELEGRAM_GROUP_ID = -1002341709610;
-const DELAY_BETWEEN_RESPONSES = 3000000;
+const DELAY_BETWEEN_RESPONSES = 300000;
 
 const MODEL_1 = "anthropic/claude-3-opus";
 const MODEL_2 = "meta-llama/llama-3.3-70b-instruct";
