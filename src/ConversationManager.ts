@@ -3,8 +3,9 @@ import { ChatSession, Message, ModelConfig } from "./types";
 import { DatabaseService } from "./services/DatabaseService";
 
 const TELEGRAM_GROUP_ID = -1002341709610;
-const DELAY_BETWEEN_RESPONSES = 600000; // 10 minutes in milliseconds
-
+const DELAY_BETWEEN_RESPONSES = 3000000;
+const MODEL_1 = "anthropic/claude-3-opus";
+const MODEL_2 = "meta-llama/llama-3.3-70b-instruct";
 export class ConversationManager {
   private model1: ModelConfig;
   private model2: ModelConfig;
@@ -46,7 +47,7 @@ export class ConversationManager {
     await this.db.saveSession(session);
   }
 
-  private async loadSession(sessionId: string): Promise<ChatSession | null> {
+  public async loadSession(sessionId: string): Promise<ChatSession | null> {
     return await this.db.loadSession(sessionId);
   }
 
@@ -74,7 +75,8 @@ export class ConversationManager {
       });
 
       const body = JSON.stringify({
-        model: "anthropic/claude-3-5-sonnet",
+        model: `${model.name === "Alan Watts" ? MODEL_1 : MODEL_2}`,
+        temperature: 1,
         messages: [
           { role: "system", content: model.systemPrompt },
           ...contextMessages,
@@ -94,19 +96,29 @@ export class ConversationManager {
       );
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(
+          `API request failed: ${response.statusText}\nResponse: ${errorText}`
+        );
       }
 
       const data = await response.json();
 
       if (!data?.choices?.[0]?.message?.content) {
-        throw new Error("Invalid API response format");
+        throw new Error(
+          `Invalid API response format. Received: ${JSON.stringify(data)}`
+        );
       }
 
       return data.choices[0].message.content;
     } catch (error) {
       console.error("Error in API call:", error);
-      return `[Error] Failed to get response from ${model.name}. Please check your API key and try again.`;
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+      }
+      return `[Error] Failed to get response from ${model.name}. Error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`;
     }
   }
 
@@ -130,6 +142,35 @@ export class ConversationManager {
     return session;
   }
 
+  public async startNewSessionFromPrevious(
+    previousSessionId: string
+  ): Promise<ChatSession> {
+    const previousSession = await this.loadSession(previousSessionId);
+    if (!previousSession) {
+      throw new Error(`Previous session ${previousSessionId} not found`);
+    }
+
+    const timestamp = new Date().toISOString();
+    const session: ChatSession = {
+      id: timestamp.replace(/[:.]/g, "-"),
+      timestamp,
+      messages: [...previousSession.messages],
+    };
+
+    // Get last 5 messages
+    const lastFiveMessages = previousSession.messages
+      .slice(-5)
+      .map((msg) => msg.content)
+      .join("\n\n");
+
+    await this.saveSession(session);
+    await this.sendToTelegram(
+      `Session ID: ${session.id}\nContinued from: ${previousSessionId}\n\nLast messages:\n${lastFiveMessages}`,
+      true // Pin this message
+    );
+    return session;
+  }
+
   public async continueConversation(
     sessionId: string,
     turns: number
@@ -137,6 +178,16 @@ export class ConversationManager {
     const session = await this.loadSession(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
+    }
+
+    // Remove last message if it was from Model 1 (who goes first)
+    const lastMessage = session.messages[session.messages.length - 1];
+    if (
+      lastMessage &&
+      lastMessage.content.startsWith(`[${this.model1.name}]:\n\n`)
+    ) {
+      session.messages.pop();
+      await this.saveSession(session);
     }
 
     for (let i = 0; i < turns; i++) {
